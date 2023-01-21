@@ -4,8 +4,8 @@ from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
-from forms import UserAddForm, LoginForm, MessageForm
-from models import db, connect_db, User, Message
+from forms import UserAddForm, LoginForm, MessageForm, EditProfileForm
+from models import db, connect_db, User, Message,Follows
 
 CURR_USER_KEY = "curr_user"
 
@@ -18,7 +18,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = (
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = False
-app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
+app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
 toolbar = DebugToolbarExtension(app)
 
@@ -112,6 +112,11 @@ def login():
 @app.route('/logout')
 def logout():
     """Handle logout of user."""
+    if CURR_USER_KEY in session:
+        del session[CURR_USER_KEY]
+        flash("successfully logged out", 'success')
+        return redirect('/')
+
 
     # IMPLEMENT THIS
 
@@ -210,6 +215,39 @@ def stop_following(follow_id):
 @app.route('/users/profile', methods=["GET", "POST"])
 def profile():
     """Update profile for current user."""
+    
+    if not g.user:
+        flash("Please login first", "danger")
+        return redirect("/login")
+    form = EditProfileForm()
+    user = User.query.get_or_404(g.user.id)
+    
+    if form.validate_on_submit():
+        if User.authenticate(g.user.username, form.password.data):
+            user.username = form.username.data
+            user.email = form.email.data
+            user.bio = form.bio.data
+            user.location = form.location.data
+            user.image_url = form.image_url.data
+            user.header_image_url = form.header_image_url.data
+        
+            db.session.commit()
+            flash('Profile updated', 'success')
+            
+          
+            # return redirect('users/profile')
+            return redirect(f'users/{user.id}')
+
+
+    return render_template('users/edit.html', form = form , user =user)
+
+
+
+
+
+
+
+    
 
     # IMPLEMENT THIS
 
@@ -292,11 +330,12 @@ def homepage():
     """
 
     if g.user:
-        messages = (Message
-                    .query
-                    .order_by(Message.timestamp.desc())
-                    .limit(100)
-                    .all())
+        own = Message.query.filter(Message.user_id == g.user.id)
+        followed = [ user.id for user in g.user.following ]
+        m = Message.query.filter(Message.user_id.in_(followed)).limit(20)
+        messages = m.union(own).order_by(Message.timestamp.desc())
+      
+     
 
         return render_template('home.html', messages=messages)
 
