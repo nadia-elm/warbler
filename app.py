@@ -17,7 +17,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = (
     os.environ.get('DATABASE_URL', 'postgresql:///warbler'))
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ECHO'] = False
+app.config['SQLALCHEMY_ECHO'] = True
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
 toolbar = DebugToolbarExtension(app)
@@ -234,7 +234,7 @@ def display_likes(user_id):
 
 
 
-@app.route('/users/<int:message_id>/like', methods = ['POST'])
+@app.route('/users/<int:message_id>/like', methods = ['POST','GET'])
 def like_message(message_id):
     if not g.user:
         flash("Please login first", "danger")
@@ -243,6 +243,7 @@ def like_message(message_id):
     message = Message.query.get(message_id)
     if message.user_id == g.user.id:
         flash("you can not like your own messages !", 'info')
+        return redirect(f"/users/{g.user.id}")
 
     if message in g.user.likes:
         flash('message unliked', 'primary')
@@ -368,20 +369,26 @@ def messages_destroy(message_id):
 @app.route('/')
 def homepage():
     """Show homepage:
-
     - anon users: no messages
     - logged in: 100 most recent messages of followed_users
     """
 
     if g.user:
-        own = Message.query.filter(Message.user_id == g.user.id)
-        followed = [ user.id for user in g.user.following ]
-        m = Message.query.filter(Message.user_id.in_(followed)).limit(20)
-        messages = m.union(own).order_by(Message.timestamp.desc())
+        # own = Message.query.filter(Message.user_id == g.user.id)
+        followed = [ user.id for user in g.user.following] +[g.user.id]
+        messages = (Message
+                    .query
+                    .filter(Message.user_id.in_(followed))
+                    .order_by(Message.timestamp.desc())
+                    .limit(100)
+                    .all())
+    
+
+        liked_msg = [msg.id for msg in g.user.likes]
       
      
 
-        return render_template('home.html', messages=messages)
+        return render_template('home.html', messages=messages, likes = liked_msg)
 
     else:
         return render_template('home-anon.html')

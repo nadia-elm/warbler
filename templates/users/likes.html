@@ -2,13 +2,30 @@
 {% extends 'base.html' %}
 {% block content %}
 
-{% if user.likes %}
+<!-- {% if user.likes %}
 {% for like in user.likes %}
 <p>{{like.text }}</p>
 <p>{{like.timestamp}}</p>
 <p>{{like.user}}</p>
 {% endfor %}
 
-{% endif %}
+{% endif %} -->
+
+
+
+
+
+<div class="col-lg-6 col-md-8 col-sm-12">
+    <ul class="list-group" id="messages">
+        {% if user.likes %}
+        {% for like  in user.likes %}
+        <li class="list-group-item">
+            <div class="message-area">
+                <h4 class="text-secondary">@{{ like.user }}</h4>
+                <span class="text-muted">{{ like.timestamp.strftime('%d %B %Y') }}</span>
+                <p>{{ like.text }}</p>
+            </div>
+            {% endfor %}
+            {% endif %}
 
 {% endblock %}
