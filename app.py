@@ -212,6 +212,50 @@ def stop_following(follow_id):
     return redirect(f"/users/{g.user.id}/following")
 
 
+# add like /unlike features
+@app.route('/users/<int:user_id>/likes')
+def display_likes(user_id):
+    if not g.user:
+        flash("Please login first", "danger")
+        return redirect("/login")
+     
+    user = User.query.get_or_404(user_id)
+
+    return render_template("/users/likes.html", user =user)
+
+
+
+
+
+
+
+
+
+
+
+
+@app.route('/users/<int:message_id>/like', methods = ['POST'])
+def like_message(message_id):
+    if not g.user:
+        flash("Please login first", "danger")
+        return redirect("/login")
+
+    message = Message.query.get(message_id)
+    if message.user_id == g.user.id:
+        flash("you can not like your own messages !", 'info')
+
+    if message in g.user.likes:
+        flash('message unliked', 'primary')
+        g.user.likes.remove(message)
+    else:
+        g.user.likes.append(message)
+    
+        flash("like added" ,'success')
+    
+    db.session.commit()
+    return redirect(f'/users/{g.user.id}')
+
+
 @app.route('/users/profile', methods=["GET", "POST"])
 def profile():
     """Update profile for current user."""
@@ -249,7 +293,7 @@ def profile():
 
     
 
-    # IMPLEMENT THIS
+  
 
 
 @app.route('/users/delete', methods=["POST"])

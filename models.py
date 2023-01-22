@@ -116,7 +116,7 @@ class User(db.Model):
     )
 
     def __repr__(self):
-        return f"<User #{self.id}: {self.username}, {self.email}>"
+        return f" {self.username}"
 
     def is_followed_by(self, other_user):
         """Is this user followed by `other_user`?"""

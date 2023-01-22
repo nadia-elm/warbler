@@ -1,0 +1,14 @@
+
+{% extends 'base.html' %}
+{% block content %}
+
+{% if user.likes %}
+{% for like in user.likes %}
+<p>{{like.text }}</p>
+<p>{{like.timestamp}}</p>
+<p>{{like.user}}</p>
+{% endfor %}
+
+{% endif %}
+
+{% endblock %}
